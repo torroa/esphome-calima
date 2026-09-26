@@ -66,8 +66,8 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       this->read_sensor_handle_ = 0;
       auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
       if (chr == nullptr) {
-        ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s", SERVICE_PAX_STATUS.to_str().c_str(),
-                 CHARACTERISTIC_SENSOR_DATA.to_str().c_str());
+        ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s", SERVICE_PAX_STATUS.to_string().c_str(),
+                 CHARACTERISTIC_SENSOR_DATA.to_string().c_str());
         break;
       }
       this->read_sensor_handle_ = chr->handle;
@@ -127,7 +127,7 @@ void PaxCalima::read_sensors_(uint8_t *value, uint16_t value_len) {
   if (this->fan_mode_sensor_ != nullptr)
   {
 	uint8_t mode = value[8];
-	if ((mode >> 4) & 1 == 1)
+	if ((mode >> 4) & (1 == 1))
 	  this->fan_mode_sensor_->publish_state("Boost");
     else if ((mode & 3) == 1)
 	  this->fan_mode_sensor_->publish_state("Trickle ventilation");
