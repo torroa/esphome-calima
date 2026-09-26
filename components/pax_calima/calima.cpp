@@ -127,7 +127,7 @@ void PaxCalima::read_sensors_(uint8_t *value, uint16_t value_len) {
   if (this->fan_mode_sensor_ != nullptr)
   {
 	uint8_t mode = value[8];
-	if ((mode >> 4) & (1 == 1))
+	if ((mode >> 4) == 1)
 	  this->fan_mode_sensor_->publish_state("Boost");
     else if ((mode & 3) == 1)
 	  this->fan_mode_sensor_->publish_state("Trickle ventilation");
