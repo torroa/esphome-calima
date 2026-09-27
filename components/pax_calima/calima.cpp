@@ -63,8 +63,8 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
       if (chr == nullptr) {
         ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s",
-                 SERVICE_PAX_STATUS.to_string().c_str(),
-                 CHARACTERISTIC_SENSOR_DATA.to_string().c_str());
+         SERVICE_PAX_STATUS.to_str().c_str(),
+         CHARACTERISTIC_SENSOR_DATA.to_str().c_str());
         break;
       }
       this->read_sensor_handle_ = chr->handle;
