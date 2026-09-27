@@ -1,6 +1,7 @@
-﻿#include "esphome/components/esp32_ble_tracker/esp32_ble_tracker.h"
+#include "esphome/components/esp32_ble_tracker/esp32_ble_tracker.h"
 #include "calima.h"
-#include <math.h>   
+#include <cmath>
+#include <string>
 
 namespace esphome {
 namespace pax_calima {
@@ -32,23 +33,20 @@ const char hexmap[] =
     "E0" "E1" "E2" "E3" "E4" "E5" "E6" "E7" "E8" "E9" "EA" "EB" "EC" "ED" "EE" "EF"
     "F0" "F1" "F2" "F3" "F4" "F5" "F6" "F7" "F8" "F9" "FA" "FB" "FC" "FD" "FE" "FF";
 
-std::string buf_to_hex(const uint8_t *buffer, size_t size)
-{
+std::string buf_to_hex(const uint8_t *buffer, size_t size) {
   if (size == 0)
     return "";
   std::string raw(size * 3 - 1, ' ');
-  for (size_t i = 0; i < size; ++i)
-  {
+  for (size_t i = 0; i < size; ++i) {
     const char *p = hexmap + (buffer[i] * 2);
-    raw[3 * i] = p[0];
+    raw[3 * i]     = p[0];
     raw[3 * i + 1] = p[1];
   }
   return raw;
 }
 
-
 void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
-                                        esp_ble_gattc_cb_param_t *param) {
+                                    esp_ble_gattc_cb_param_t *param) {
   switch (event) {
     case ESP_GATTC_OPEN_EVT: {
       if (param->open.status == ESP_GATT_OK) {
@@ -56,28 +54,24 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       }
       break;
     }
-
     case ESP_GATTC_DISCONNECT_EVT: {
       ESP_LOGW(TAG, "Disconnected!");
       break;
     }
-
     case ESP_GATTC_SEARCH_CMPL_EVT: {
       this->read_sensor_handle_ = 0;
       auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
       if (chr == nullptr) {
-        ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s", SERVICE_PAX_STATUS.toString().c_str(),
-                 CHARACTERISTIC_SENSOR_DATA.toString().c_str());
+        ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s",
+                 SERVICE_PAX_STATUS.to_string().c_str(),
+                 CHARACTERISTIC_SENSOR_DATA.to_string().c_str());
         break;
       }
       this->read_sensor_handle_ = chr->handle;
-
       this->node_state = esp32_ble_tracker::ClientState::ESTABLISHED;
-
       request_read_values_();
       break;
     }
-
     case ESP_GATTC_READ_CHAR_EVT: {
       if (param->read.conn_id != this->parent()->get_conn_id())
         break;
@@ -90,7 +84,6 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       }
       break;
     }
-
     default:
       break;
   }
@@ -100,43 +93,39 @@ constexpr size_t SENSOR_STRUCTURE_SIZE = 12;
 
 void PaxCalima::read_sensors_(uint8_t *value, uint16_t value_len) {
   ESP_LOGV(TAG, "result bytes: %s", buf_to_hex(value, value_len).c_str());
-  if (value_len < SENSOR_STRUCTURE_SIZE)
-  {
-	ESP_LOGW(TAG, "Wrong structure size %d expected %d", value_len, SENSOR_STRUCTURE_SIZE);
-	return;
+  if (value_len < SENSOR_STRUCTURE_SIZE) {
+    ESP_LOGW(TAG, "Wrong structure size %d expected %d", value_len, SENSOR_STRUCTURE_SIZE);
+    return;
   }
-  if (this->temperature_sensor_ != nullptr)
-  {
-	uint16_t sensor = value[2] + (value[3] << 8);
-	this->temperature_sensor_->publish_state(sensor / 4.0f);
+  if (this->temperature_sensor_ != nullptr) {
+    uint16_t sensor = value[2] + (value[3] << 8);
+    this->temperature_sensor_->publish_state(sensor / 4.0f);
   }
-  if (this->humidity_sensor_ != nullptr)
-  {
-	uint16_t sensor = value[0] + (value[1] << 8);
-	float sensor_val = (sensor == 0) ? 0.0f : log2(sensor) * 10.0f;
-	this->humidity_sensor_->publish_state(sensor_val);
+  if (this->humidity_sensor_ != nullptr) {
+    uint16_t sensor = value[0] + (value[1] << 8);
+    float sensor_val = (sensor == 0) ? 0.0f : std::log2(static_cast<float>(sensor)) * 10.0f;
+    this->humidity_sensor_->publish_state(sensor_val);
   }
   if (this->illuminance_sensor_ != nullptr) {
-	uint16_t sensor = value[4] + (value[5] << 8);
-	this->illuminance_sensor_->publish_state(sensor);
+    uint16_t sensor = value[4] + (value[5] << 8);
+    this->illuminance_sensor_->publish_state(sensor);
   }
   if (this->rotation_sensor_ != nullptr) {
-	uint16_t sensor = value[6] + (value[7] << 8);
-	this->rotation_sensor_->publish_state(sensor);
+    uint16_t sensor = value[6] + (value[7] << 8);
+    this->rotation_sensor_->publish_state(sensor);
   }
-  if (this->fan_mode_sensor_ != nullptr)
-  {
-	uint8_t mode = value[8];
-	if ((mode >> 4) == 1)
-	  this->fan_mode_sensor_->publish_state("Boost");
+  if (this->fan_mode_sensor_ != nullptr) {
+    uint8_t mode = value[8];
+    if (((mode >> 4) & 1) == 1)
+      this->fan_mode_sensor_->publish_state("Boost");
     else if ((mode & 3) == 1)
-	  this->fan_mode_sensor_->publish_state("Trickle ventilation");
+      this->fan_mode_sensor_->publish_state("Trickle ventilation");
     else if ((mode & 3) == 2)
-	  this->fan_mode_sensor_->publish_state("Light ventilation");
+      this->fan_mode_sensor_->publish_state("Light ventilation");
     else if ((mode & 3) == 3)
-	  this->fan_mode_sensor_->publish_state("Humidity ventilation");
-	else
-	  this->fan_mode_sensor_->publish_state("Off");
+      this->fan_mode_sensor_->publish_state("Humidity ventilation");
+    else
+      this->fan_mode_sensor_->publish_state("Off");
   }
   parent()->set_enabled(false);
 }
@@ -149,12 +138,9 @@ void PaxCalima::request_read_values_() {
   }
 }
 
-PaxCalima::PaxCalima() : PollingComponent()
-{
-}
+PaxCalima::PaxCalima() : PollingComponent() {}
 
-void PaxCalima::dump_config() {
-}
+void PaxCalima::dump_config() {}
 
 void PaxCalima::update() {
   if (this->node_state != esp32_ble_tracker::ClientState::ESTABLISHED) {
@@ -168,5 +154,5 @@ void PaxCalima::update() {
   }
 }
 
-} // namespace pax_calima
-} // namespace esphome 
+}  // namespace pax_calima
+}  // namespace esphome
