@@ -58,20 +58,22 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       ESP_LOGW(TAG, "Disconnected!");
       break;
     }
-    case ESP_GATTC_SEARCH_CMPL_EVT: {
-      this->read_sensor_handle_ = 0;
-      auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
-      if (chr == nullptr) {
-        ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s",
-         SERVICE_PAX_STATUS.to_str().c_str(),
-         CHARACTERISTIC_SENSOR_DATA.to_str().c_str());
-        break;
-      }
-      this->read_sensor_handle_ = chr->handle;
-      this->node_state = esp32_ble_tracker::ClientState::ESTABLISHED;
-      request_read_values_();
-      break;
-    }
+    ccase ESP_GATTC_SEARCH_CMPL_EVT: {
+  this->read_sensor_handle_ = 0;
+  auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
+  if (chr == nullptr) {
+    char service_buf[esphome::ble_device_base::ESPBTUUID::UUID_STR_LEN];
+    char char_buf[esphome::ble_device_base::ESPBTUUID::UUID_STR_LEN];
+    ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s",
+             SERVICE_PAX_STATUS.to_str(service_buf),
+             CHARACTERISTIC_SENSOR_DATA.to_str(char_buf));
+    break;
+  }
+  this->read_sensor_handle_ = chr->handle;
+  this->node_state = esp32_ble_tracker::ClientState::ESTABLISHED;
+  request_read_values_();
+  break;
+}
     case ESP_GATTC_READ_CHAR_EVT: {
       if (param->read.conn_id != this->parent()->get_conn_id())
         break;
