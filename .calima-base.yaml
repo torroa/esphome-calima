@@ -23,6 +23,8 @@ sensor:
       name: ${device_name} illuminance
     rotation:
       name: ${device_name} rotation
+      unit_of_measurement: "rpm"
+      state_class: "measurement"
 
 text_sensor:
   - platform: pax_calima
