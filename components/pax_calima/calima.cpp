@@ -58,7 +58,7 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       ESP_LOGW(TAG, "Disconnected!");
       break;
     }
-    ccase ESP_GATTC_SEARCH_CMPL_EVT: {
+    case ESP_GATTC_SEARCH_CMPL_EVT: {
   this->read_sensor_handle_ = 0;
   auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
   if (chr == nullptr) {
