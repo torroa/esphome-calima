@@ -121,13 +121,13 @@ void PaxCalima::read_sensors_(uint8_t *value, uint16_t value_len) {
     if (((mode >> 4) & 1) == 1)
       this->fan_mode_sensor_->publish_state("Boost");
     else if ((mode & 3) == 1)
-      this->fan_mode_sensor_->publish_state("Trickle ventilation");
+      this->fan_mode_sensor_->publish_state("Minimum");
     else if ((mode & 3) == 2)
-      this->fan_mode_sensor_->publish_state("Light ventilation");
+      this->fan_mode_sensor_->publish_state("Normal");
     else if ((mode & 3) == 3)
-      this->fan_mode_sensor_->publish_state("Humidity ventilation");
+      this->fan_mode_sensor_->publish_state("Maksimal");
     else
-      this->fan_mode_sensor_->publish_state("Off");
+      this->fan_mode_sensor_->publish_state("Avskrudd");
   }
   parent()->set_enabled(false);
 }
