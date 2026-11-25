@@ -74,21 +74,22 @@ void PaxCalima::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t ga
       request_read_values_();
       break;
     }
-    case ESP_GATTC_READ_CHAR_EVT: {
-      if (param->read.conn_id != this->parent()->get_conn_id())
-        break;
-      if (param->read.status != ESP_GATT_OK) {
-        ESP_LOGW(TAG, "Error reading char at handle %d, status=%d", param->read.handle, param->read.status);
-        break;
-      }
-      if (param->read.handle == this->read_sensor_handle_) {
-        read_sensors_(param->read.value, param->read.value_len);
-      }
-      break;
-    }
-    default:
-      break;
+    case ESP_GATTC_SEARCH_CMPL_EVT: {
+      this->read_sensor_handle_ = 0;
+      auto *chr = this->parent()->get_characteristic(SERVICE_PAX_STATUS, CHARACTERISTIC_SENSOR_DATA);
+      if (chr == nullptr) {
+        char service_buf[37];
+        char char_buf[37];
+        ESP_LOGW(TAG, "No sensor read characteristic found at service %s char %s",
+             SERVICE_PAX_STATUS.to_str(service_buf),
+             CHARACTERISTIC_SENSOR_DATA.to_str(char_buf));
+    break;
   }
+  this->read_sensor_handle_ = chr->handle;
+  this->node_state = esp32_ble_tracker::ClientState::ESTABLISHED;
+  request_read_values_();
+  break;
+}
 }
 
 constexpr size_t SENSOR_STRUCTURE_SIZE = 12;
@@ -119,15 +120,15 @@ void PaxCalima::read_sensors_(uint8_t *value, uint16_t value_len) {
   if (this->fan_mode_sensor_ != nullptr) {
     uint8_t mode = value[8];
     if (((mode >> 4) & 1) == 1)
-      this->fan_mode_sensor_->publish_state("Boost");
+  this->fan_mode_sensor_->publish_state("Boost");
     else if ((mode & 3) == 1)
-      this->fan_mode_sensor_->publish_state("Minimum");
+  this->fan_mode_sensor_->publish_state("Minimum");
     else if ((mode & 3) == 2)
-      this->fan_mode_sensor_->publish_state("Normal");
+  this->fan_mode_sensor_->publish_state("Normal");
     else if ((mode & 3) == 3)
-      this->fan_mode_sensor_->publish_state("Maksimal");
+  this->fan_mode_sensor_->publish_state("Maksimal");
     else
-      this->fan_mode_sensor_->publish_state("Avskrudd");
+  this->fan_mode_sensor_->publish_state("Avskrudd");
   }
   parent()->set_enabled(false);
 }
